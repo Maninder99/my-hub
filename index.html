@@ -40,6 +40,32 @@ html,body{height:100%;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:1;}
 
+/* ── TASK DETAIL / EDIT MODAL ── */
+.task-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.detail-field{background:var(--surface2);border-radius:10px;padding:12px 14px;}
+.detail-field-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.detail-field-val{font-size:13px;font-weight:500;}
+.modal-wide{width:620px;max-width:95vw;}
+.step-edit-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.step-edit-row input{flex:1;}
+
+/* ── LEARNING TRACKER ── */
+.course-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:10px;position:relative;overflow:hidden;}
+.course-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent2);}
+.course-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px;}
+.course-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.course-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.cert-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;font-weight:600;}
+.cert-done{background:rgba(110,231,183,.15);color:var(--accent);}
+.cert-prog{background:rgba(129,140,248,.15);color:var(--accent2);}
+.cert-todo{background:rgba(100,116,139,.15);color:var(--muted);}
+
+/* ── NOTIFICATIONS ── */
+.notif-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.notif-info{flex:1;}
+.notif-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent3);}
+.notif-perm-banner{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+
 /* ── MOBILE RESPONSIVE ── */
 .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer;font-size:18px;line-height:1;}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:98;}
@@ -56,8 +82,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   .page-header{flex-direction:column;gap:10px;}
   .hdr-actions{flex-wrap:wrap;}
   .focus-timer{font-size:64px!important;}
-  .focus-ring{width:170px!important;height:170px!important;}
-  .focus-ring svg{width:170px!important;height:170px!important;}
+  .task-detail-grid{grid-template-columns:1fr!important;}
 }
 
 /* ── LAYOUT ── */
@@ -334,6 +359,8 @@ select option{background:var(--surface2);}
   <div class="nav-sec">Intelligence</div>
   <div class="nav-item" onclick="go('ai',this)"><span class="icon">🤖</span>AI Coach</div>
   <div class="nav-item" onclick="go('review',this)"><span class="icon">📝</span>Weekly Review</div>
+  <div class="nav-item" onclick="go('learning',this)"><span class="icon">🎓</span>Self-Learning</div>
+  <div class="nav-item" onclick="go('notifs',this)"><span class="icon">🔔</span>Reminders</div>
   <div class="sync-bar" id="sync-bar">
     <div class="sync-dot" id="sync-dot"></div>
     <span id="sync-lbl">Not configured</span>
@@ -570,6 +597,64 @@ select option{background:var(--surface2);}
   <div id="review-form"></div>
 </div>
 
+<!-- ── SELF-LEARNING TRACKER ── -->
+<div class="view" id="view-learning">
+  <div class="page-header">
+    <div><div class="page-title">Self-Learning</div><div class="page-sub">Courses · Certifications · Timeline</div></div>
+    <div class="hdr-actions">
+      <button class="btn btn-primary btn-sm" onclick="openCourseModal()">+ Add Course / Cert</button>
+    </div>
+  </div>
+  <div class="two-col" style="margin-bottom:16px;">
+    <div class="card">
+      <div class="card-title">📊 Learning Stats</div>
+      <div id="learning-stats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏆 Completed Certifications</div>
+      <div id="cert-completed"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="filter-btn active" data-lf="all" onclick="filterLearning('all',this)">ALL</button>
+      <button class="filter-btn" data-lf="inprogress" onclick="filterLearning('inprogress',this)">IN PROGRESS</button>
+      <button class="filter-btn" data-lf="todo" onclick="filterLearning('todo',this)">NOT STARTED</button>
+      <button class="filter-btn" data-lf="done" onclick="filterLearning('done',this)">COMPLETED</button>
+      <button class="filter-btn" data-lf="course" onclick="filterLearning('course',this)">COURSES</button>
+      <button class="filter-btn" data-lf="cert" onclick="filterLearning('cert',this)">CERTIFICATIONS</button>
+    </div>
+    <div id="learning-list"></div>
+  </div>
+</div>
+
+<!-- ── REMINDERS / NOTIFICATIONS ── -->
+<div class="view" id="view-notifs">
+  <div class="page-header">
+    <div><div class="page-title">Reminders</div><div class="page-sub">Browser push notifications · Desktop & Mobile Chrome</div></div>
+    <div class="hdr-actions">
+      <button class="btn btn-primary btn-sm" onclick="openReminderModal()">+ Add Reminder</button>
+    </div>
+  </div>
+  <div class="notif-perm-banner" id="notif-banner">
+    <span style="font-size:20px">🔔</span>
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:13px;margin-bottom:2px">Enable notifications</div>
+      <div style="font-size:11px;color:var(--muted)">Allow browser notifications to get reminders on desktop and Android Chrome</div>
+    </div>
+    <button class="btn btn-warn btn-sm" onclick="requestNotifPermission()">Enable Now</button>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">⏰ Active Reminders</div>
+    <div id="reminders-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Task Deadline Reminders</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;font-family:'DM Mono',monospace;">Auto-generated from tasks with due dates</div>
+    <div id="task-reminders-list"></div>
+  </div>
+</div>
+
 </main>
 </div>
 
@@ -597,10 +682,10 @@ select option{background:var(--surface2);}
   <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:8px;text-align:center;max-width:320px;line-height:1.6;" id="focus-tip"></div>
 </div>
 
-<!-- TASK MODAL -->
+<!-- TASK ADD/EDIT MODAL -->
 <div class="modal-overlay" id="task-modal">
-  <div class="modal">
-    <h3>Add Task</h3>
+  <div class="modal modal-wide">
+    <h3 id="task-modal-title">Add Task</h3>
     <div class="fr"><label class="fl">Task Name</label><input type="text" id="m-name" placeholder="e.g. Submit assignment 3"/></div>
     <div class="g2">
       <div class="fr"><label class="fl">Category</label>
@@ -615,19 +700,127 @@ select option{background:var(--surface2);}
     </div>
     <div class="g2">
       <div class="fr"><label class="fl">Due Date</label><input type="date" id="m-due"/></div>
+      <div class="fr"><label class="fl">Due Time (optional)</label><input type="time" id="m-due-time"/></div>
+    </div>
+    <div class="g2">
+      <div class="fr"><label class="fl">Start Time</label><input type="time" id="m-start-time"/></div>
+      <div class="fr"><label class="fl">End Time</label><input type="time" id="m-end-time"/></div>
+    </div>
+    <div class="g2">
       <div class="fr"><label class="fl">Priority</label>
         <select id="m-pri"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select>
       </div>
+      <div class="fr"><label class="fl">Estimated hours</label><input type="number" id="m-est" min="0.5" max="40" step="0.5" placeholder="e.g. 3"/></div>
     </div>
-    <div class="fr"><label class="fl">Estimated hours</label><input type="number" id="m-est" min="0.5" max="40" step="0.5" placeholder="e.g. 3"/></div>
+    <div class="fr"><label class="fl">Reminder</label>
+      <select id="m-reminder">
+        <option value="">No reminder</option>
+        <option value="attime">At due time</option>
+        <option value="15min">15 min before</option>
+        <option value="1hour">1 hour before</option>
+        <option value="1day">1 day before</option>
+        <option value="2days">2 days before</option>
+      </select>
+    </div>
     <div class="fr"><label class="fl">Notes</label><textarea id="m-notes" rows="2" placeholder="Any context..."></textarea></div>
     <div class="fr">
-      <label class="fl">Break into sub-steps (one per line)</label>
-      <textarea id="m-steps" rows="3" placeholder="Step 1: Research&#10;Step 2: Draft outline&#10;Step 3: Write intro"></textarea>
+      <label class="fl">Sub-steps (one per line)</label>
+      <textarea id="m-steps" rows="3" placeholder="Step 1: Research&#10;Step 2: Draft outline&#10;Step 3: Write"></textarea>
     </div>
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="closeTaskModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveTask()">Add Task</button>
+      <button class="btn btn-primary" id="task-modal-save-btn" onclick="saveTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK DETAIL VIEW MODAL -->
+<div class="modal-overlay" id="task-detail-modal">
+  <div class="modal modal-wide">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <h3 id="td-name" style="flex:1;margin:0;font-size:18px;"></h3>
+      <button class="btn btn-ghost btn-sm" onclick="editCurrentTask()">✏️ Edit</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="task-detail-grid" id="td-grid"></div>
+    <div id="td-steps" style="margin-top:14px;"></div>
+    <div id="td-notes" style="margin-top:10px;"></div>
+    <div class="modal-btns" style="margin-top:16px;">
+      <button class="btn btn-danger btn-sm" id="td-delete-btn" onclick="">🗑 Delete</button>
+      <button class="btn btn-primary btn-sm" id="td-complete-btn" onclick="">✓ Mark Complete</button>
+    </div>
+  </div>
+</div>
+
+<!-- COURSE / CERT MODAL -->
+<div class="modal-overlay" id="course-modal">
+  <div class="modal modal-wide">
+    <h3 id="course-modal-title">Add Course / Certification</h3>
+    <div class="fr"><label class="fl">Title</label><input type="text" id="cm-title" placeholder="e.g. AWS Solutions Architect, Python for Data Science"/></div>
+    <div class="g2">
+      <div class="fr"><label class="fl">Type</label>
+        <select id="cm-type">
+          <option value="course">📚 Online Course</option>
+          <option value="cert">🏆 Certification</option>
+          <option value="book">📖 Book / Reading</option>
+          <option value="workshop">🛠 Workshop / Bootcamp</option>
+        </select>
+      </div>
+      <div class="fr"><label class="fl">Platform / Provider</label>
+        <input type="text" id="cm-platform" placeholder="e.g. Coursera, Udemy, AWS"/>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="fr"><label class="fl">Status</label>
+        <select id="cm-status">
+          <option value="todo">📋 Not Started</option>
+          <option value="inprogress">🔄 In Progress</option>
+          <option value="done">✅ Completed</option>
+        </select>
+      </div>
+      <div class="fr"><label class="fl">Progress (0–100%)</label>
+        <input type="number" id="cm-progress" min="0" max="100" placeholder="e.g. 45"/>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="fr"><label class="fl">Start Date</label><input type="date" id="cm-start"/></div>
+      <div class="fr"><label class="fl">Target Completion</label><input type="date" id="cm-target"/></div>
+    </div>
+    <div class="fr"><label class="fl">Total Hours / Modules</label>
+      <input type="text" id="cm-total" placeholder="e.g. 40 hours, 12 modules, 6 chapters"/>
+    </div>
+    <div class="fr"><label class="fl">Notes / URL</label>
+      <input type="text" id="cm-notes" placeholder="Link or any notes..."/>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeCourseModal()">Cancel</button>
+      <button class="btn btn-primary" id="course-save-btn" onclick="saveCourse()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- REMINDER MODAL -->
+<div class="modal-overlay" id="reminder-modal">
+  <div class="modal">
+    <h3>Add Reminder</h3>
+    <div class="fr"><label class="fl">What to remind you</label>
+      <input type="text" id="rm-text" placeholder="e.g. Submit COMP 101 assignment, Study for exam"/>
+    </div>
+    <div class="g2">
+      <div class="fr"><label class="fl">Date</label><input type="date" id="rm-date"/></div>
+      <div class="fr"><label class="fl">Time</label><input type="time" id="rm-time" value="09:00"/></div>
+    </div>
+    <div class="fr"><label class="fl">Repeat</label>
+      <select id="rm-repeat">
+        <option value="none">No repeat</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="weekdays">Weekdays only</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeReminderModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReminder()">Set Reminder</button>
     </div>
   </div>
 </div>
@@ -731,7 +924,7 @@ const FB_DOC = 'user/main'; // single-user app — all data in one doc per colle
 
 function initFirebase() {
   try {
-    if (FIREBASE_CONFIG.apiKey === 'AIzaSyBp6uVt4DjTmedDcoytOq93moXe0UIybV4') {
+    if (FIREBASE_CONFIG.apiKey === 'PASTE_YOUR_apiKey_HERE') {
       setSyncStatus('offline', 'No config — local only');
       return;
     }
@@ -903,7 +1096,7 @@ function save() {
 
 function saveDp() {
   localStorage.setItem('hub_daily', JSON.stringify(dailyBlocks));
-  if (fbReady) fbSaveDoc('hub_meta', 'daily', {value: dailyBlocks});
+  fbSaveDoc('hub_meta', 'daily', {value: dailyBlocks});
 }
 
 function saveFocus() {
@@ -931,12 +1124,12 @@ function saveProcrToFB() {
 
 function saveWeeklyToFB() {
   localStorage.setItem('hub_weekly', JSON.stringify(weeklyData));
-  if (fbReady) fbSaveDoc('hub_meta', 'weekly', {value: weeklyData});
+  fbSaveDoc('hub_meta', 'weekly', {value: weeklyData});
 }
 
 function saveReviewsToFB() {
   localStorage.setItem('hub_reviews', JSON.stringify(reviews));
-  if (fbReady) fbSaveDoc('hub_meta', 'reviews', {value: reviews});
+  fbSaveDoc('hub_meta', 'reviews', {value: reviews});
 }
 
 // Delete a task from Firebase when deleted locally
@@ -955,18 +1148,6 @@ function dow(d)    {return DAYS[((d.getDay()+6)%7)];}
 function uid()     {return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 
 // ═══════════════════════════════════════════════════════════
-// MOBILE SIDEBAR
-// ═══════════════════════════════════════════════════════════
-function toggleSidebar() {
-  document.querySelector('.sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('open');
-}
-function closeSidebar() {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.getElementById('sidebar-overlay').classList.remove('open');
-}
-
-// ═══════════════════════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════════════════════
 function go(v, el) {
@@ -974,7 +1155,6 @@ function go(v, el) {
   document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
   document.getElementById('view-'+v).classList.add('active');
   el.classList.add('active');
-  closeSidebar(); // auto-close on mobile after tap
   if      (v==='dashboard') renderDashboard();
   else if (v==='tasks')     renderTasks();
   else if (v==='calendar')  renderCalendar();
@@ -1126,24 +1306,25 @@ function taskHTML(t) {
   // Subtask progress
   const stTotal=(t.steps||[]).length, stDone=(t.steps||[]).filter(s=>s.done).length;
   const stPct=stTotal?Math.round(stDone/stTotal*100):null;
-  return `<div class="task-item ${t.done?'done':''} ${isOverdue?'fire':''}" style="--cat-color:${CAT[t.cat].color}">
-    <div class="task-check" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+  return `<div class="task-item ${t.done?'done':''} ${isOverdue?'fire':''}" style="--cat-color:${CAT[t.cat].color};cursor:pointer;" onclick="openTaskDetail('${t.id}')">
+    <div class="task-check" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
     <div class="task-info" style="flex:1">
       <div class="task-name">${esc(t.name)}${t.sub?` <span style="color:var(--muted);font-size:11px">· ${esc(t.sub)}</span>`:''}${isOverdue?' 🔴':''}</div>
       <div class="task-meta">
         <span class="tag tag-${t.cat}">${CAT[t.cat].label}</span>
         ${t.due?`<span class="task-due ${dueCls}">${dueLabel}</span>`:''}
+        ${t.startTime&&t.endTime?`<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">🕐 ${t.startTime}–${t.endTime}</span>`:''}
         <span style="font-size:9px;padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-weight:700;background:${pbg};color:${pc}">${t.priority.toUpperCase()}</span>
         ${t.est?`<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">~${t.est}h</span>`:''}
         ${stPct!==null?`<span style="font-size:10px;color:var(--accent2);font-family:'DM Mono',monospace">${stDone}/${stTotal} steps</span>`:''}
+        ${t.reminder?`<span style="font-size:10px;color:var(--warn);font-family:'DM Mono',monospace">🔔</span>`:''}
       </div>
       ${stTotal?`<div class="prog-bar" style="margin-top:5px;width:140px"><div class="prog-fill" style="width:${stPct}%;background:var(--accent2)"></div></div>`:''}
-      ${t.notes?`<div style="font-size:10.5px;color:var(--muted);margin-top:3px;font-style:italic">${esc(t.notes)}</div>`:''}
     </div>
-    <div class="task-actions">
+    <div class="task-actions" onclick="event.stopPropagation()">
+      <button class="btn btn-xs btn-ghost" onclick="openTaskModal('${t.id}')">✏️</button>
       <button class="btn btn-xs btn-purple" onclick="startFocusOnTask('${t.id}')">🎯</button>
       <button class="btn btn-xs btn-warn" onclick="logProcrast('${t.id}')">😮</button>
-      <button class="btn btn-xs btn-ghost" onclick="expandSteps('${t.id}')">⋯</button>
       <button class="btn btn-xs btn-danger" onclick="deleteTask('${t.id}')">✕</button>
     </div>
   </div>
@@ -1228,32 +1409,135 @@ function startFocusOnTask(id) {
   if(sel) sel.value=id;
 }
 
-// Task modal
-function openTaskModal() {
-  ['m-name','m-sub','m-notes','m-steps'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('m-due').value='';
-  document.getElementById('m-est').value='';
-  document.getElementById('m-cat').value='freelance';
-  document.getElementById('m-pri').value='med';
+// Task modal — supports both ADD and EDIT
+let editingTaskId = null;
+
+function openTaskModal(editId) {
+  editingTaskId = editId || null;
+  const t = editId ? tasks.find(function(x){return x.id===editId;}) : null;
+  document.getElementById('task-modal-title').textContent = t ? 'Edit Task' : 'Add Task';
+  document.getElementById('task-modal-save-btn').textContent = t ? 'Save Changes' : 'Add Task';
+  document.getElementById('m-name').value  = t ? t.name    : '';
+  document.getElementById('m-sub').value   = t ? (t.sub||'')    : '';
+  document.getElementById('m-notes').value = t ? (t.notes||'')  : '';
+  document.getElementById('m-due').value   = t ? (t.due||'')    : '';
+  document.getElementById('m-due-time').value   = t ? (t.dueTime||'')    : '';
+  document.getElementById('m-start-time').value = t ? (t.startTime||'')  : '';
+  document.getElementById('m-end-time').value   = t ? (t.endTime||'')    : '';
+  document.getElementById('m-est').value   = t ? (t.est||'')    : '';
+  document.getElementById('m-cat').value   = t ? t.cat     : 'freelance';
+  document.getElementById('m-pri').value   = t ? t.priority: 'med';
+  document.getElementById('m-reminder').value = t ? (t.reminder||'') : '';
+  document.getElementById('m-steps').value = t && t.steps && t.steps.length
+    ? t.steps.map(function(s){return s.text;}).join('\n') : '';
   document.getElementById('task-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('m-name').focus(),80);
+  setTimeout(function(){document.getElementById('m-name').focus();},80);
 }
-function closeTaskModal(){document.getElementById('task-modal').classList.remove('open');}
+function closeTaskModal(){
+  document.getElementById('task-modal').classList.remove('open');
+  editingTaskId = null;
+}
 function saveTask() {
-  const name=document.getElementById('m-name').value.trim();
-  if(!name){document.getElementById('m-name').focus();return;}
-  const rawSteps=document.getElementById('m-steps').value.trim();
-  const steps=rawSteps?rawSteps.split('\n').filter(s=>s.trim()).map(s=>({text:s.trim(),done:false})):[];
-  tasks.push({id:uid(),name,cat:document.getElementById('m-cat').value,
-    sub:document.getElementById('m-sub').value.trim(),
-    due:document.getElementById('m-due').value,
-    priority:document.getElementById('m-pri').value,
-    est:document.getElementById('m-est').value||null,
-    notes:document.getElementById('m-notes').value.trim(),
-    steps,done:false,createdAt:Date.now(),completedAt:null});
-  save(); closeTaskModal(); renderTasks(); updateAcc();
-  showToast('Task added ✅');
+  const name = document.getElementById('m-name').value.trim();
+  if (!name){document.getElementById('m-name').focus(); return;}
+  const rawSteps = document.getElementById('m-steps').value.trim();
+  const newSteps = rawSteps ? rawSteps.split('\n').filter(function(s){return s.trim();})
+    .map(function(s){return {text:s.trim(),done:false};}) : [];
+  const reminder = document.getElementById('m-reminder').value;
+
+  if (editingTaskId) {
+    // EDIT existing task
+    const t = tasks.find(function(x){return x.id===editingTaskId;});
+    if (!t) return;
+    // Preserve existing step done states where text matches
+    const mergedSteps = newSteps.map(function(ns){
+      const existing = (t.steps||[]).find(function(es){return es.text===ns.text;});
+      return existing ? existing : ns;
+    });
+    t.name      = name;
+    t.cat       = document.getElementById('m-cat').value;
+    t.sub       = document.getElementById('m-sub').value.trim();
+    t.due       = document.getElementById('m-due').value;
+    t.dueTime   = document.getElementById('m-due-time').value;
+    t.startTime = document.getElementById('m-start-time').value;
+    t.endTime   = document.getElementById('m-end-time').value;
+    t.priority  = document.getElementById('m-pri').value;
+    t.est       = document.getElementById('m-est').value || null;
+    t.notes     = document.getElementById('m-notes').value.trim();
+    t.steps     = mergedSteps;
+    t.reminder  = reminder;
+    t.updatedAt = Date.now();
+    save(); closeTaskModal(); renderTasks(); updateAcc();
+    showToast('Task updated ✅');
+    // Schedule reminder if set
+    if (reminder && t.due) scheduleReminder(t);
+  } else {
+    // ADD new task
+    const newTask = {
+      id:uid(), name,
+      cat:       document.getElementById('m-cat').value,
+      sub:       document.getElementById('m-sub').value.trim(),
+      due:       document.getElementById('m-due').value,
+      dueTime:   document.getElementById('m-due-time').value,
+      startTime: document.getElementById('m-start-time').value,
+      endTime:   document.getElementById('m-end-time').value,
+      priority:  document.getElementById('m-pri').value,
+      est:       document.getElementById('m-est').value || null,
+      notes:     document.getElementById('m-notes').value.trim(),
+      steps:     newSteps, reminder,
+      done:false, createdAt:Date.now(), completedAt:null
+    };
+    tasks.push(newTask);
+    save(); closeTaskModal(); renderTasks(); updateAcc();
+    showToast('Task added ✅');
+    if (reminder && newTask.due) scheduleReminder(newTask);
+  }
 }
+
+// Task detail modal
+let detailTaskId = null;
+function openTaskDetail(id) {
+  const t = tasks.find(function(x){return x.id===id;});
+  if (!t) return;
+  detailTaskId = id;
+  document.getElementById('td-name').textContent = t.name;
+  const now = new Date(); now.setHours(0,0,0,0);
+  let dueStr = '—';
+  if (t.due) {
+    const diff = Math.ceil((new Date(t.due)-now)/86400000);
+    const rel = diff<0?`${Math.abs(diff)}d overdue`:diff===0?'Today':`in ${diff}d`;
+    dueStr = t.due + (t.dueTime?' at '+t.dueTime:'') + ' (' + rel + ')';
+  }
+  const timeStr = t.startTime && t.endTime ? t.startTime+' → '+t.endTime
+    : t.startTime ? 'From '+t.startTime : t.endTime ? 'Until '+t.endTime : '—';
+  const stTotal=(t.steps||[]).length, stDone=(t.steps||[]).filter(function(s){return s.done;}).length;
+  document.getElementById('td-grid').innerHTML = [
+    {l:'Category',    v: (CAT[t.cat]||CAT.other).emoji+' '+(CAT[t.cat]||CAT.other).label},
+    {l:'Sub-label',   v: t.sub||'—'},
+    {l:'Due',         v: dueStr},
+    {l:'Time Block',  v: timeStr},
+    {l:'Priority',    v: t.priority ? t.priority.toUpperCase() : '—'},
+    {l:'Est. Hours',  v: t.est ? t.est+'h' : '—'},
+    {l:'Reminder',    v: t.reminder||'None'},
+    {l:'Progress',    v: stTotal ? stDone+'/'+stTotal+' steps ('+Math.round(stDone/stTotal*100)+'%)' : t.done?'Completed':'Pending'},
+    {l:'Created',     v: new Date(t.createdAt).toLocaleDateString()},
+    {l:'Status',      v: t.done ? '✅ Done' : '⏳ Pending'},
+  ].map(function(f){
+    return '<div class="detail-field"><div class="detail-field-lbl">'+f.l+'</div><div class="detail-field-val">'+esc(String(f.v))+'</div></div>';
+  }).join('');
+  // Steps
+  document.getElementById('td-steps').innerHTML = stTotal ? '<div class="card-title" style="margin-bottom:8px">📋 Sub-steps</div>'+renderSteps(t) : '';
+  // Notes
+  document.getElementById('td-notes').innerHTML = t.notes
+    ? '<div style="background:var(--surface2);border-radius:10px;padding:12px"><div class="detail-field-lbl">Notes</div><div style="font-size:13px;line-height:1.6">'+esc(t.notes)+'</div></div>' : '';
+  // Buttons
+  document.getElementById('td-complete-btn').textContent = t.done ? '↩ Mark Incomplete' : '✓ Mark Complete';
+  document.getElementById('td-complete-btn').onclick = function(){ toggleTask(id); closeDetailModal(); };
+  document.getElementById('td-delete-btn').onclick = function(){ closeDetailModal(); deleteTask(id); };
+  document.getElementById('task-detail-modal').classList.add('open');
+}
+function closeDetailModal(){ document.getElementById('task-detail-modal').classList.remove('open'); }
+function editCurrentTask(){ closeDetailModal(); openTaskModal(detailTaskId); }
 
 // ═══════════════════════════════════════════════════════════
 // CALENDAR
@@ -1866,11 +2150,393 @@ function showToast(msg) {
 });
 
 // ═══════════════════════════════════════════════════════════
+// MOBILE SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// Patch go() to close sidebar on mobile and handle new views
+var _origGo = go;
+go = function(v, el) {
+  document.querySelectorAll('.view').forEach(function(x){x.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
+  document.getElementById('view-'+v).classList.add('active');
+  el.classList.add('active');
+  closeSidebar();
+  if      (v==='dashboard') renderDashboard();
+  else if (v==='tasks')     renderTasks();
+  else if (v==='calendar')  renderCalendar();
+  else if (v==='focus')     renderFocus();
+  else if (v==='habits')    renderHabits();
+  else if (v==='procrast')  renderProcrast();
+  else if (v==='weekly')    buildWeekly();
+  else if (v==='daily')     renderDaily();
+  else if (v==='review')    renderReview();
+  else if (v==='learning')  renderLearning();
+  else if (v==='notifs')    renderNotifs();
+};
+
+// ═══════════════════════════════════════════════════════════
+// SELF-LEARNING TRACKER
+// ═══════════════════════════════════════════════════════════
+let courses = JSON.parse(localStorage.getItem('hub_courses') || '[]');
+let learningFilter = 'all';
+let editingCourseId = null;
+
+function saveCoursesToFB() {
+  localStorage.setItem('hub_courses', JSON.stringify(courses));
+  if (fbReady) courses.forEach(function(c){ fbSaveDoc('hub_courses', c.id, c); });
+}
+
+function renderLearning() {
+  // Stats
+  const total = courses.length;
+  const done  = courses.filter(function(c){return c.status==='done';}).length;
+  const inprog= courses.filter(function(c){return c.status==='inprogress';}).length;
+  const certs = courses.filter(function(c){return c.type==='cert'&&c.status==='done';}).length;
+  document.getElementById('learning-stats').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+      ${[['📚',total,'Total'],['🔄',inprog,'In Progress'],['✅',done,'Completed'],['🏆',certs,'Certs Earned']].map(function(s){
+        return '<div style="text-align:center;padding:12px;background:var(--surface2);border-radius:10px;">'
+          +'<div style="font-size:18px">'+s[0]+'</div>'
+          +'<div style="font-family:\'Syne\',sans-serif;font-size:22px;font-weight:800;color:var(--accent2)">'+s[1]+'</div>'
+          +'<div style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace">'+s[2]+'</div></div>';
+      }).join('')}
+    </div>`;
+
+  // Completed certs
+  const doneCerts = courses.filter(function(c){return c.status==='done';});
+  document.getElementById('cert-completed').innerHTML = doneCerts.length
+    ? doneCerts.map(function(c){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">'
+          +'<span style="font-size:16px">'+(c.type==='cert'?'🏆':c.type==='book'?'📖':'📚')+'</span>'
+          +'<div><div style="font-size:12px;font-weight:600">'+esc(c.title)+'</div>'
+          +'<div style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace">'+esc(c.platform||'')+(c.completedDate?' · '+c.completedDate:'')+'</div></div>'
+          +'</div>';
+      }).join('')
+    : '<div class="empty" style="padding:16px">Complete your first course! 🎯</div>';
+
+  // Filtered list
+  let filtered = courses;
+  if (learningFilter==='inprogress') filtered=courses.filter(function(c){return c.status==='inprogress';});
+  else if (learningFilter==='todo')  filtered=courses.filter(function(c){return c.status==='todo';});
+  else if (learningFilter==='done')  filtered=courses.filter(function(c){return c.status==='done';});
+  else if (learningFilter==='course')filtered=courses.filter(function(c){return c.type==='course';});
+  else if (learningFilter==='cert')  filtered=courses.filter(function(c){return c.type==='cert';});
+
+  document.getElementById('learning-list').innerHTML = filtered.length
+    ? filtered.map(function(c){
+        const pct = parseInt(c.progress)||0;
+        const now = new Date(); now.setHours(0,0,0,0);
+        let deadlineStr='', deadlineCls='';
+        if (c.target) {
+          const diff=Math.ceil((new Date(c.target)-now)/86400000);
+          deadlineStr = diff<0?`${Math.abs(diff)}d overdue`:diff===0?'Due today':`${diff}d left`;
+          deadlineCls = diff<0?'color:var(--danger)':diff<=7?'color:var(--accent3)':'color:var(--muted)';
+        }
+        const typeIcon = c.type==='cert'?'🏆':c.type==='book'?'📖':c.type==='workshop'?'🛠':'📚';
+        const statusBadge = c.status==='done'
+          ? '<span class="cert-badge cert-done">✅ Completed</span>'
+          : c.status==='inprogress'
+          ? '<span class="cert-badge cert-prog">🔄 In Progress</span>'
+          : '<span class="cert-badge cert-todo">📋 Not Started</span>';
+        return `<div class="course-card">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:22px;flex-shrink:0">${typeIcon}</span>
+            <div style="flex:1;min-width:0;">
+              <div class="course-title">${esc(c.title)}</div>
+              <div class="course-meta">
+                ${statusBadge}
+                ${c.platform?`<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(c.platform)}</span>`:''}
+                ${c.total?`<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(c.total)}</span>`:''}
+                ${deadlineStr?`<span style="font-size:10px;font-family:'DM Mono',monospace;${deadlineCls}">📅 ${deadlineStr}</span>`:''}
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                <div class="prog-bar" style="flex:1;height:6px;"><div class="prog-fill" style="width:${pct}%;background:var(--accent2)"></div></div>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);flex-shrink:0">${pct}%</span>
+              </div>
+              ${c.notes?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(c.notes)}</div>`:''}
+            </div>
+          </div>
+          <div class="course-actions">
+            <button class="btn btn-xs btn-ghost" onclick="openCourseModal('${c.id}')">✏️ Edit</button>
+            <button class="btn btn-xs btn-purple" onclick="updateCourseProgress('${c.id}')">📈 Update %</button>
+            ${c.status!=='done'?`<button class="btn btn-xs btn-primary" onclick="markCourseDone('${c.id}')">✅ Complete</button>`:''}
+            <button class="btn btn-xs btn-danger" onclick="deleteCourse('${c.id}')">✕</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">No courses yet. Add your first course or certification!</div>';
+}
+
+function filterLearning(f, el) {
+  learningFilter = f;
+  document.querySelectorAll('[data-lf]').forEach(function(x){x.classList.remove('active');});
+  el.classList.add('active');
+  renderLearning();
+}
+
+function openCourseModal(editId) {
+  editingCourseId = editId || null;
+  const c = editId ? courses.find(function(x){return x.id===editId;}) : null;
+  document.getElementById('course-modal-title').textContent = c ? 'Edit Course' : 'Add Course / Certification';
+  document.getElementById('course-save-btn').textContent = c ? 'Save Changes' : 'Add';
+  document.getElementById('cm-title').value    = c ? c.title    : '';
+  document.getElementById('cm-type').value     = c ? c.type     : 'course';
+  document.getElementById('cm-platform').value = c ? (c.platform||'') : '';
+  document.getElementById('cm-status').value   = c ? c.status   : 'todo';
+  document.getElementById('cm-progress').value = c ? (c.progress||0) : 0;
+  document.getElementById('cm-start').value    = c ? (c.start||'')   : '';
+  document.getElementById('cm-target').value   = c ? (c.target||'')  : '';
+  document.getElementById('cm-total').value    = c ? (c.total||'')   : '';
+  document.getElementById('cm-notes').value    = c ? (c.notes||'')   : '';
+  document.getElementById('course-modal').classList.add('open');
+  setTimeout(function(){document.getElementById('cm-title').focus();},80);
+}
+function closeCourseModal(){ document.getElementById('course-modal').classList.remove('open'); editingCourseId=null; }
+function saveCourse() {
+  const title = document.getElementById('cm-title').value.trim();
+  if (!title) return;
+  if (editingCourseId) {
+    const c = courses.find(function(x){return x.id===editingCourseId;});
+    if (c) {
+      c.title=title; c.type=document.getElementById('cm-type').value;
+      c.platform=document.getElementById('cm-platform').value;
+      c.status=document.getElementById('cm-status').value;
+      c.progress=parseInt(document.getElementById('cm-progress').value)||0;
+      c.start=document.getElementById('cm-start').value;
+      c.target=document.getElementById('cm-target').value;
+      c.total=document.getElementById('cm-total').value;
+      c.notes=document.getElementById('cm-notes').value;
+    }
+  } else {
+    courses.push({
+      id:uid(), title, type:document.getElementById('cm-type').value,
+      platform:document.getElementById('cm-platform').value,
+      status:document.getElementById('cm-status').value,
+      progress:parseInt(document.getElementById('cm-progress').value)||0,
+      start:document.getElementById('cm-start').value,
+      target:document.getElementById('cm-target').value,
+      total:document.getElementById('cm-total').value,
+      notes:document.getElementById('cm-notes').value,
+      createdAt:Date.now()
+    });
+  }
+  saveCoursesToFB(); closeCourseModal(); renderLearning();
+  showToast(editingCourseId ? 'Updated ✅' : 'Course added 📚');
+}
+function updateCourseProgress(id) {
+  const pct = prompt('Enter current progress (0–100):');
+  if (pct===null) return;
+  const c = courses.find(function(x){return x.id===id;});
+  if (c) { c.progress=Math.min(100,Math.max(0,parseInt(pct)||0)); if(c.progress===100) c.status='done'; }
+  saveCoursesToFB(); renderLearning();
+}
+function markCourseDone(id) {
+  const c = courses.find(function(x){return x.id===id;});
+  if (c) { c.status='done'; c.progress=100; c.completedDate=new Date().toISOString().split('T')[0]; }
+  saveCoursesToFB(); renderLearning();
+  showToast('Course completed! 🏆');
+}
+function deleteCourse(id) {
+  if (!confirm('Delete this course?')) return;
+  courses = courses.filter(function(x){return x.id!==id;});
+  if (fbReady) fbDeleteDoc('hub_courses', id);
+  localStorage.setItem('hub_courses', JSON.stringify(courses));
+  renderLearning();
+}
+
+// Load courses from Firebase too
+function loadCoursesFromFB() {
+  if (!fbReady) return;
+  db.collection('hub_courses').get().then(function(snap){
+    var arr=[];
+    snap.forEach(function(doc){arr.push(doc.data());});
+    if(arr.length>0){courses=arr;localStorage.setItem('hub_courses',JSON.stringify(courses));}
+  }).catch(function(e){console.warn('courses load error',e);});
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICATIONS & REMINDERS
+// ═══════════════════════════════════════════════════════════
+let reminders = JSON.parse(localStorage.getItem('hub_reminders') || '[]');
+let notifPermission = 'default';
+
+function saveRemindersToFB() {
+  localStorage.setItem('hub_reminders', JSON.stringify(reminders));
+  if (fbReady) reminders.forEach(function(r){ fbSaveDoc('hub_reminders', r.id, r); });
+}
+
+function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    showToast('Notifications not supported in this browser');
+    return;
+  }
+  Notification.requestPermission().then(function(perm){
+    notifPermission = perm;
+    if (perm === 'granted') {
+      showToast('Notifications enabled! 🔔');
+      document.getElementById('notif-banner').style.display = 'none';
+      // Send a test notification
+      new Notification('My Hub — Notifications enabled!', {
+        body: 'You will now receive reminders for your tasks.',
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>'
+      });
+      renderNotifs();
+    } else {
+      showToast('Permission denied — check browser settings');
+    }
+  });
+}
+
+function scheduleReminder(task) {
+  if (!task.due || !task.reminder || notifPermission !== 'granted') return;
+  const dueDate = new Date(task.due + (task.dueTime ? 'T'+task.dueTime : 'T09:00'));
+  const offsets = {
+    'attime':0, '15min':15*60*1000, '1hour':60*60*1000,
+    '1day':24*60*60*1000, '2days':2*24*60*60*1000
+  };
+  const offset = offsets[task.reminder] || 0;
+  const fireAt = dueDate.getTime() - offset;
+  const delay = fireAt - Date.now();
+  if (delay > 0 && delay < 7*24*60*60*1000) { // only schedule within 7 days
+    setTimeout(function(){
+      if (notifPermission === 'granted') {
+        new Notification('⚡ My Hub Reminder', {
+          body: task.name + (task.due ? ' — due '+task.due : ''),
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>',
+          tag: task.id
+        });
+      }
+    }, delay);
+  }
+}
+
+function renderNotifs() {
+  // Permission banner
+  const hasPerm = 'Notification' in window && Notification.permission === 'granted';
+  document.getElementById('notif-banner').style.display = hasPerm ? 'none' : 'flex';
+  if (hasPerm) notifPermission = 'granted';
+
+  // Manual reminders
+  document.getElementById('reminders-list').innerHTML = reminders.length
+    ? reminders.map(function(r){
+        const isPast = r.date && new Date(r.date+'T'+r.time) < new Date();
+        return '<div class="notif-item" style="'+(isPast?'opacity:.45':'')+'"">'
+          +'<span style="font-size:20px">🔔</span>'
+          +'<div class="notif-info">'
+          +'<div style="font-size:13px;font-weight:600">'+esc(r.text)+'</div>'
+          +'<div class="notif-time">'+r.date+' at '+r.time+(r.repeat&&r.repeat!=='none'?' · repeats '+r.repeat:'')+'</div>'
+          +'</div>'
+          +'<button class="btn btn-xs btn-danger" onclick="deleteReminder(\''+r.id+'\')">✕</button>'
+          +'</div>';
+      }).join('')
+    : '<div class="empty">No reminders set. Add one above!</div>';
+
+  // Task deadline reminders
+  const now = new Date(); now.setHours(0,0,0,0);
+  const upcoming = tasks.filter(function(t){return !t.done&&t.due;})
+    .sort(function(a,b){return new Date(a.due)-new Date(b.due);}).slice(0,10);
+  document.getElementById('task-reminders-list').innerHTML = upcoming.length
+    ? upcoming.map(function(t){
+        const diff=Math.ceil((new Date(t.due)-now)/86400000);
+        const lbl=diff<0?'OVERDUE':diff===0?'TODAY':'in '+diff+'d';
+        const col=diff<0?'var(--danger)':diff<=2?'var(--accent3)':'var(--muted)';
+        return '<div class="notif-item">'
+          +'<span style="font-size:16px">'+(CAT[t.cat]||CAT.other).emoji+'</span>'
+          +'<div class="notif-info">'
+          +'<div style="font-size:12px;font-weight:600">'+esc(t.name)+'</div>'
+          +'<div class="notif-time" style="color:'+col+'">'+t.due+(t.dueTime?' at '+t.dueTime:'')+' ('+lbl+')</div>'
+          +'</div>'
+          +(t.reminder?'<span style="font-size:10px;color:var(--warn);font-family:\'DM Mono\',monospace">🔔 '+t.reminder+'</span>':'')
+          +'</div>';
+      }).join('')
+    : '<div class="empty">No tasks with due dates yet</div>';
+}
+
+function openReminderModal() {
+  document.getElementById('rm-text').value = '';
+  document.getElementById('rm-date').value = '';
+  document.getElementById('rm-time').value = '09:00';
+  document.getElementById('rm-repeat').value = 'none';
+  document.getElementById('reminder-modal').classList.add('open');
+  setTimeout(function(){document.getElementById('rm-text').focus();},80);
+}
+function closeReminderModal(){ document.getElementById('reminder-modal').classList.remove('open'); }
+function saveReminder() {
+  const text = document.getElementById('rm-text').value.trim();
+  if (!text) return;
+  const r = {
+    id:uid(), text,
+    date:document.getElementById('rm-date').value,
+    time:document.getElementById('rm-time').value,
+    repeat:document.getElementById('rm-repeat').value,
+    createdAt:Date.now()
+  };
+  reminders.push(r);
+  saveRemindersToFB();
+  closeReminderModal(); renderNotifs();
+  showToast('Reminder set 🔔');
+  // Schedule it
+  if (notifPermission==='granted' && r.date && r.time) {
+    const fireAt = new Date(r.date+'T'+r.time).getTime();
+    const delay = fireAt - Date.now();
+    if (delay>0 && delay<7*24*60*60*1000) {
+      setTimeout(function(){
+        new Notification('⚡ My Hub Reminder', {
+          body: r.text,
+          icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>'
+        });
+      }, delay);
+    }
+  }
+}
+function deleteReminder(id) {
+  reminders = reminders.filter(function(x){return x.id!==id;});
+  saveRemindersToFB();
+  if (fbReady) fbDeleteDoc('hub_reminders', id);
+  renderNotifs();
+}
+
+// Re-schedule all pending task reminders on page load
+function reScheduleAllReminders() {
+  if (notifPermission !== 'granted') return;
+  tasks.forEach(function(t){ if(t.reminder&&t.due&&!t.done) scheduleReminder(t); });
+  reminders.forEach(function(r){
+    if (!r.date||!r.time) return;
+    const fireAt=new Date(r.date+'T'+r.time).getTime();
+    const delay=fireAt-Date.now();
+    if(delay>0&&delay<7*24*60*60*1000){
+      setTimeout(function(){
+        new Notification('⚡ My Hub',{body:r.text,
+          icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>'});
+      },delay);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
+// Close modals on overlay click
+['task-modal','task-detail-modal','habit-modal','procrast-modal','block-modal','course-modal','reminder-modal'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el) el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+});
+
+// Check notification permission on load
+if ('Notification' in window) notifPermission = Notification.permission;
+
 renderDashboard();
 updateAcc();
 initFirebase();
+setTimeout(function(){ loadCoursesFromFB(); reScheduleAllReminders(); }, 2000);
 </script>
 </body>
 </html>
